@@ -1,8 +1,8 @@
 import pickle
 
 with open("web.pickle", "rb") as f:
-    web = pickle.load(f)
-    seen_domains = pickle.load(f)
+    loaded_file = pickle.load(f)
+    web, seen_domains = loaded_file[0], loaded_file[1]
     print("Web data loaded successfully.")
     print(f"Seen domains: {len(seen_domains)}")
     print(f"Web data: {len(web)} nodes")
