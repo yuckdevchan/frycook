@@ -172,3 +172,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# frycook
+nodes.txt
+seen_domains.txt

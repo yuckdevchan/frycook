@@ -5,7 +5,7 @@ import linky
 
 
 h = "https://"
-starting_node = h + "google.com"
+starting_node = h + "x.com"
 
 if Path("web.pickle").exists():
     with open("web.pickle", "rb") as f:
@@ -20,6 +20,9 @@ else:
 def crawl_node(node, depth=0):
     print(f"{"-"*depth if depth < 30 else "-"*30}x{depth} Crawling: {node}")
     links = linky.get_links(node)
+    if not links:
+        print(f"No links found on {node}. Skipping...")
+        return
     web[node] = links
 
     for link in links:
