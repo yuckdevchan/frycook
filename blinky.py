@@ -1,19 +1,21 @@
-import pickle
+import json
 
-def present_data():
-    with open("web.pickle", "rb") as f:
-        loaded_file = pickle.load(f)
-        web, seen_domains = loaded_file[0], loaded_file[1]
-        print("Web data loaded successfully.")
-        print(f"Seen domains: {len(seen_domains)}")
-        print(f"Web data: {len(web)} nodes")
-        with open("nodes.txt", "w") as f:
-            for node in web:
-                f.write(node + "\n")
+import linky
 
-        with open("seen_domains.txt", "w") as f:
-            for domain in seen_domains:
-                f.write(domain + "\n")
+def get_seen_domains(web):
+    l = []
+    for domain in web.keys():
+        try:
+            l.append(linky.link_to_domain(domain))
+        except IndexError: pass
+        for domain_pair in web[domain]:
+            try:
+                l.append(linky.link_to_domain(domain_pair))
+            except IndexError: pass
+    l = list(set(l))
+    return l
 
 if __name__ == "__main__":
-    present_data()
+    with open("web.json", "r") as f:
+        web = json.load(f)
+    print(len(get_seen_domains(web)))

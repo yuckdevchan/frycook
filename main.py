@@ -1,4 +1,4 @@
-import pickle, sys, subprocess, time
+import json, sys, subprocess
 from pathlib import Path
 
 import blinky, linky
@@ -31,7 +31,23 @@ seeds = [
     "weibo.com",
     "qq.com",
     "tencent.com",
+    "whatsmyip.org",
+    "archlinux.org",
+    "ubuntu.com",
+    "debian.org",
+    "fedora.org",
+    "centos.org",
+    "linuxmint.com",
+    "opensuse.org",
+    "redhat.com",
+    "gentoo.org",
+    "slackware.com",
+    "freebsd.org",
+    "netbsd.org",
+    "openbsd.org",
 ]
+
+print("Started")
 
 if Path("stop").exists(): Path("stop").unlink()
 
@@ -53,22 +69,40 @@ if starting_node == seeds[0]:
             continue
 
 web = {starting_node: []}
-seen_domains = []
 extra = []
 
-if Path("web.pickle").exists():
-    with open("web.pickle", "rb") as f:
-        loaded_file = pickle.load(f)
-        old_web, old_seen_domains, old_extra = loaded_file[0], loaded_file[1], loaded_file[2]
+if Path("web.json").exists():
+    with open("web.json", "r") as f:
+        old_web = json.load(f)
         web.update(old_web)
-        seen_domains = list(set(seen_domains + old_seen_domains))
-        extra = list(set(extra + old_extra))
         print("Web data loaded and merged successfully.")
+
+class CrawlerState:
+    def __init__(self):
+        self.saving = False
+
+state = CrawlerState()
+
+def save(state):
+    if state.saving:
+        return
+    state.saving = True
+    if Path("web.json").exists():
+        with open("web.json", "r") as f:
+            old_web = json.load(f)
+            web.update(old_web)
+
+    with open("web.json", "w") as f:
+        to_dump = web
+        json.dump(to_dump, f, indent=4)
+    sys.exit(0)
+
+seen_domains = blinky.get_seen_domains(web)
 
 def crawl_node(node, depth=0):
     if Path("stop").exists():
-        print("Stop file found. Exiting...")
-        return
+        print("Stop file detected. Exiting...")
+        save(state)
     print(f"{"-"*depth if depth < 30 else "-"*30}x{depth} Crawling: {node}")
     links = linky.get_links(node)
     if not links:
@@ -87,24 +121,12 @@ def crawl_node(node, depth=0):
             print(f"Error processing link '{link}': {e}")
             continue
 
-try:
-    crawl_node(starting_node)
-except KeyboardInterrupt:
-    print("\n\nCrawling interrupted. Saving progress...")
-
-time.sleep(counter * 0.5)
-
-if Path("web.pickle").exists():
-    with open("web.pickle", "rb") as f:
-        loaded_file = pickle.load(f)
-        old_web, old_seen_domains, old_extra = loaded_file[0], loaded_file[1], loaded_file[2]
-        web.update(old_web)
-        seen_domains = list(set(seen_domains + old_seen_domains))
-        extra = list(set(extra + old_extra))
-
-with open("web.pickle", "wb") as f:
-    to_dump = [web, seen_domains, extra]
-    pickle.dump(to_dump, f)
-    print("Progress saved.")
-
-blinky.present_data()
+if __name__ == "__main__":
+    try:
+        crawl_node(starting_node)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt detected. Saving state...")
+        save(state)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        save(state)
