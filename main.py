@@ -1,4 +1,4 @@
-import json, sys, subprocess
+import json, sys, subprocess, time
 from pathlib import Path
 
 import blinky, linky
@@ -102,6 +102,7 @@ seen_domains = blinky.get_seen_domains(web)
 def crawl_node(node, depth=0):
     if Path("stop").exists():
         print("Stop file detected. Exiting...")
+        time.sleep(counter*0.3)
         save(state)
     print(f"{"-"*depth if depth < 30 else "-"*30}x{depth} Crawling: {node}")
     links = linky.get_links(node)
