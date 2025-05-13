@@ -20,7 +20,7 @@ def get_links(url: str) -> list:
             absolute_url = urljoin(url, link['href'])
             links.append(absolute_url)
     except Exception as e:
-        # print(f"Error fetching links from {url}: {e}")
+        print(f"Error fetching links from {url}: {e}")
         links = []
     return links
 
