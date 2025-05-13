@@ -1,55 +1,13 @@
-import json, sys, subprocess, time
+import json, sys, subprocess, random
 from pathlib import Path
 
 import blinky, linky
 
-seeds = [
-    "google.com",
-    "wikipedia.org",
-    "github.com",
-    "stackoverflow.com",
-    "yahoo.com",
-    "x.com",
-    "reddit.com",
-    "quora.com",
-    "bing.com",
-    "duckduckgo.com",
-    "baidu.com",
-    "yandex.com",
-    "amazon.com",
-    "ebay.com",
-    "craigslist.org",
-    "bestbuy.com",
-    "target.com",
-    "walmart.com",
-    "costco.com",
-    "homeDepot.com",
-    "lowes.com",
-    "alibaba.com",
-    "taobao.com",
-    "jd.com",
-    "weibo.com",
-    "qq.com",
-    "tencent.com",
-    "whatsmyip.org",
-    "archlinux.org",
-    "ubuntu.com",
-    "debian.org",
-    "fedora.org",
-    "centos.org",
-    "linuxmint.com",
-    "opensuse.org",
-    "redhat.com",
-    "gentoo.org",
-    "slackware.com",
-    "freebsd.org",
-    "netbsd.org",
-    "openbsd.org",
-]
-
-print("Started")
 
 if Path("stop").exists(): Path("stop").unlink()
+
+with open("seeds.json", "r") as f:
+    seeds = json.load(f)
 
 h = "https://"
 for i in range(len(seeds)): seeds[i] = h + seeds[i]
@@ -67,12 +25,15 @@ if starting_node == seeds[0]:
         except Exception as e:
             print(f"Error starting subprocess for {seed} {counter}: {e}")
             continue
+    counter = 0
+
+print(f"Starting crawler on {starting_node} (Thread {counter})")
 
 web = {starting_node: []}
 extra = []
 
-if Path("web.json").exists():
-    with open("web.json", "r") as f:
+if Path(f"data/web-{counter}.json").exists():
+    with open(f"data/web-{counter}.json", "r") as f:
         old_web = json.load(f)
         web.update(old_web)
         print("Web data loaded and merged successfully.")
@@ -87,12 +48,12 @@ def save(state):
     if state.saving:
         return
     state.saving = True
-    if Path("web.json").exists():
-        with open("web.json", "r") as f:
+    if Path(f"data/web-{counter}.json").exists():
+        with open(f"data/web-{counter}.json", "r") as f:
             old_web = json.load(f)
             web.update(old_web)
 
-    with open("web.json", "w") as f:
+    with open(f"data/web-{counter}.json", "w") as f:
         to_dump = web
         json.dump(to_dump, f, indent=4)
     sys.exit(0)
@@ -101,8 +62,7 @@ seen_domains = blinky.get_seen_domains(web)
 
 def crawl_node(node, depth=0):
     if Path("stop").exists():
-        print("Stop file detected. Exiting...")
-        time.sleep(counter*0.3)
+        print(f"Stop file detected. Exiting... (Thread {counter})")
         save(state)
     print(f"{"-"*depth if depth < 30 else "-"*30}x{depth} Crawling: {node}")
     links = linky.get_links(node)
@@ -123,7 +83,10 @@ def crawl_node(node, depth=0):
             continue
 
 if __name__ == "__main__":
+    # blinky.clean_data()
     try:
+        if seen_domains != []:
+            crawl_node(random.choice(seen_domains))
         crawl_node(starting_node)
     except KeyboardInterrupt:
         print("Keyboard interrupt detected. Saving state...")

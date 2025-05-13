@@ -1,3 +1,4 @@
+from pathlib import Path
 import json
 
 import linky
@@ -15,7 +16,34 @@ def get_seen_domains(web):
     l = list(set(l))
     return l
 
+def compile_data():
+    """
+    Compiles the data from the web dictionary parts into a single dictionary.
+    """
+    web = {}
+    for f in Path("data").glob("web*"):
+        with open(f, "r") as f:
+            data = json.load(f)
+            web.update(data)
+        Path(str(f.name)).unlink()
+    print("Compiled data into one structure.")
+    return web
+
+def write_data(data):
+    """
+    Writes the compiled data to a JSON file.
+    """
+    with open(Path("data/web.json"), "w") as f:
+        json.dump(data, f, indent=4)
+    print("Data written to data/web.json.")
+
+def clean_data():
+    for f in Path("data").glob("web-*.json"):
+        Path("data/" + str(f.name)).unlink()
+    print("Cleaned up old data files.")
+
 if __name__ == "__main__":
-    with open("web.json", "r") as f:
+    write_data(compile_data())
+    with open(Path("data/web.json"), "r") as f:
         web = json.load(f)
     print(len(get_seen_domains(web)))
