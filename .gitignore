@@ -176,3 +176,4 @@ cython_debug/
 # frycook
 nodes.txt
 seen_domains.txt
+web.pickle

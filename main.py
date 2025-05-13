@@ -5,7 +5,7 @@ import linky
 
 
 h = "https://"
-starting_node = h + "google.com"
+starting_node = h + "minecraft.net"
 
 if Path("web.pickle").exists():
     with open("web.pickle", "rb") as f:
@@ -16,7 +16,7 @@ else:
     web = {starting_node: []}
     seen_domains = []
     extra = []
-
+22
 def crawl_node(node, depth=0):
     print(f"{"-"*depth if depth < 30 else "-"*30}x{depth} Crawling: {node}")
     links = linky.get_links(node)
