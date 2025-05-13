@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-def get_links(url):
+def get_links(url: str) -> list:
     try:
         """
         Gets all links on the webpage at the given URL.
@@ -10,7 +10,7 @@ def get_links(url):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=5)
         if response.status_code != 200:
             raise Exception(f"Failed to load page: {response.status_code}")
         html = response.text
@@ -23,3 +23,11 @@ def get_links(url):
         print(f"Error fetching links from {url}: {e}")
         links = []
     return links
+
+def link_to_domain(link: str) -> str:
+    domain = link.split("/")[2]
+    if "?" in domain:
+        domain = domain.split("?")[0]
+    if "#" in domain:
+        domain = domain.split("#")[0]
+    return domain
