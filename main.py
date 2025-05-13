@@ -45,4 +45,4 @@ with open("web.pickle", "wb") as f:
     to_dump = [web, seen_domains, extra]
     pickle.dump(to_dump, f)
     print("Progress saved.")
-    blinky.present_data
+    blinky.present_data()
