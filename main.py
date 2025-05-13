@@ -33,7 +33,7 @@ seeds = [
     "tencent.com",
 ]
 
-print("Started")
+if Path("stop").exists(): Path("stop").unlink()
 
 h = "https://"
 for i in range(len(seeds)): seeds[i] = h + seeds[i]
@@ -66,6 +66,9 @@ if Path("web.pickle").exists():
         print("Web data loaded and merged successfully.")
 
 def crawl_node(node, depth=0):
+    if Path("stop").exists():
+        print("Stop file found. Exiting...")
+        return
     print(f"{"-"*depth if depth < 30 else "-"*30}x{depth} Crawling: {node}")
     links = linky.get_links(node)
     if not links:
@@ -89,7 +92,7 @@ try:
 except KeyboardInterrupt:
     print("\n\nCrawling interrupted. Saving progress...")
 
-time.sleep(counter * 0.3)
+time.sleep(counter * 0.5)
 
 if Path("web.pickle").exists():
     with open("web.pickle", "rb") as f:
