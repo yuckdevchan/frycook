@@ -14,7 +14,7 @@ for i in range(len(seeds)): seeds[i] = h + seeds[i]
 starting_node = sys.argv[1] if len(sys.argv) > 1 else seeds[0]
 counter = int(sys.argv[2] if len(sys.argv) > 2 else 0)
 
-starting_counter = 512
+starting_counter = 0
 
 if starting_node == seeds[0]:
     counter = starting_counter
