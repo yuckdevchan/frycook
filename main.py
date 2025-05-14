@@ -14,8 +14,10 @@ for i in range(len(seeds)): seeds[i] = h + seeds[i]
 starting_node = sys.argv[1] if len(sys.argv) > 1 else seeds[0]
 counter = int(sys.argv[2] if len(sys.argv) > 2 else 0)
 
+starting_counter = 512
+
 if starting_node == seeds[0]:
-    counter = 0
+    counter = starting_counter
     for seed in seeds:
         if seed == starting_node:
             continue
@@ -25,7 +27,7 @@ if starting_node == seeds[0]:
         except Exception as e:
             print(f"Error starting subprocess for {seed} {counter}: {e}")
             continue
-    counter = 0
+    counter = starting_counter
 
 print(f"Starting crawler on {starting_node} (Thread {counter})")
 
@@ -61,6 +63,8 @@ def save(state):
 seen_domains = blinky.get_seen_domains(web)
 
 def crawl_node(node, depth=0):
+    if depth > 15:
+        return
     if Path("stop").exists():
         print(f"Stop file detected. Exiting... (Thread {counter})")
         save(state)
@@ -85,9 +89,10 @@ def crawl_node(node, depth=0):
 if __name__ == "__main__":
     # blinky.clean_data()
     try:
-        if seen_domains != []:
-            crawl_node(random.choice(seen_domains))
-        crawl_node(starting_node)
+        while True:
+            if seen_domains != []:
+                crawl_node(random.choice(seen_domains))
+            crawl_node(starting_node)
     except KeyboardInterrupt:
         print("Keyboard interrupt detected. Saving state...")
         save(state)

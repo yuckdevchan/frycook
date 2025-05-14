@@ -11,7 +11,8 @@ print("Done!")
 
 with open(Path("data/web.json"), "r") as f:
     web = json.load(f)
-print(len(blinky.get_seen_domains(web)))
+print('{:,}'.format(len(blinky.get_seen_domains(web))), "distinct websites so far.")
+print('{:,}'.format(len(blinky.get_seen_pages(web))), "web pages so far")
 
 try: subprocess.run("code data/web.json", shell=True) # This is so that the file opens nicely in VSCode for me :)
 except: pass

@@ -3,7 +3,7 @@ import json
 
 import linky
 
-def get_seen_domains(web):
+def get_seen_domains(web) -> list:
     l = []
     for domain in web.keys():
         try:
@@ -16,15 +16,25 @@ def get_seen_domains(web):
     l = list(set(l))
     return l
 
+def get_seen_pages(web) -> list:
+    l = []
+    for branch in web:
+        for leaf in branch:
+            l.append(leaf)
+    return l
+
 def compile_data():
     """
     Compiles the data from the web dictionary parts into a single dictionary.
     """
     web = {}
     for f in Path("data").glob("web*"):
-        with open(f, "r") as f:
-            data = json.load(f)
-            web.update(data)
+        try:
+            with open(f, "r") as f:
+                data = json.load(f)
+                web.update(data)
+        except json.JSONDecodeError:
+            pass
         Path(str(f.name)).unlink()
     print("Compiled data into one structure.")
     return web
