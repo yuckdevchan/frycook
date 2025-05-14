@@ -7,7 +7,7 @@ Path("stop").touch()
 
 finished = input("Finished? [Enter]")
 blinky.write_data(blinky.compile_data())
-Path("stop").unlink()
+# Path("stop").unlink()
 print("Done!")
 
 with open(Path("data/web.json"), "r") as f:

@@ -6,6 +6,9 @@ import blinky, linky
 
 if Path("stop").exists(): Path("stop").unlink()
 
+if not Path("data").exists():
+    Path("data").mkdir()
+
 with open("seeds.json", "r") as f:
     seeds = json.load(f)
 
@@ -13,23 +16,6 @@ h = "https://"
 for i in range(len(seeds)): seeds[i] = h + seeds[i]
 starting_node = sys.argv[1] if len(sys.argv) > 1 else seeds[0]
 counter = int(sys.argv[2] if len(sys.argv) > 2 else 0)
-
-starting_counter = 0
-
-if starting_node == seeds[0]:
-    counter = starting_counter
-    for seed in seeds:
-        if seed == starting_node:
-            continue
-        counter += 1
-        try:
-            subprocess.Popen(f"python main.py {seed} {counter}", shell=True)
-        except Exception as e:
-            print(f"Error starting subprocess for {seed} {counter}: {e}")
-            continue
-    counter = starting_counter
-
-print(f"Starting crawler on {starting_node} (Thread {counter})")
 
 web = {starting_node: []}
 extra = []
@@ -39,6 +25,33 @@ if Path(f"data/web-{counter}.json").exists():
         old_web = json.load(f)
         web.update(old_web)
         print("Web data loaded and merged successfully.")
+
+seen_domains = blinky.get_seen_domains(web)
+num_threads = 2048
+starting_counter = 0
+
+if starting_node == seeds[0]:
+    counter = starting_counter
+    for i in range(num_threads):
+        if i < len(seeds):
+            if seeds[i] == starting_node:
+                continue
+        counter += 1
+        if i < len(seeds):
+            seed = seeds[i]
+        elif len(seen_domains) > 0:
+            seed = random.choice(seen_domains)
+        else:
+            print("No more seeds available. Exiting...")
+            break
+        try:
+            subprocess.Popen(f"python main.py {seed} {counter}", shell=True)
+        except Exception as e:
+            print(f"Error starting subprocess for {seed} {counter}: {e}")
+            continue
+    counter = starting_counter
+
+print(f"Starting crawler on {starting_node} (Thread {counter})")
 
 class CrawlerState:
     def __init__(self):
@@ -59,8 +72,6 @@ def save(state):
         to_dump = web
         json.dump(to_dump, f, indent=4)
     sys.exit(0)
-
-seen_domains = blinky.get_seen_domains(web)
 
 def crawl_node(node, depth=0):
     if depth > 15:
