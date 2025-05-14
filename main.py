@@ -3,55 +3,59 @@ from pathlib import Path
 
 import blinky, linky
 
+def start():
+    """Start the crawler"""
+    
+    if Path("stop").exists(): Path("stop").unlink()
 
-if Path("stop").exists(): Path("stop").unlink()
+    if not Path("data").exists():
+        Path("data").mkdir()
 
-if not Path("data").exists():
-    Path("data").mkdir()
+    with open("seeds.json", "r") as f:
+        seeds = json.load(f)
 
-with open("seeds.json", "r") as f:
-    seeds = json.load(f)
+    h = "https://"
+    for i in range(len(seeds)): seeds[i] = h + seeds[i]
+    starting_node = sys.argv[1] if len(sys.argv) > 1 else seeds[0]
+    counter = int(sys.argv[2] if len(sys.argv) > 2 else 0)
 
-h = "https://"
-for i in range(len(seeds)): seeds[i] = h + seeds[i]
-starting_node = sys.argv[1] if len(sys.argv) > 1 else seeds[0]
-counter = int(sys.argv[2] if len(sys.argv) > 2 else 0)
+    web = {starting_node: []}
+    extra = []
 
-web = {starting_node: []}
-extra = []
+    if Path(f"data/web-{counter}.json").exists():
+        with open(f"data/web-{counter}.json", "r") as f:
+            old_web = json.load(f)
+            web.update(old_web)
+            print("Web data loaded and merged successfully.")
 
-if Path(f"data/web-{counter}.json").exists():
-    with open(f"data/web-{counter}.json", "r") as f:
-        old_web = json.load(f)
-        web.update(old_web)
-        print("Web data loaded and merged successfully.")
+    seen_domains = blinky.get_seen_domains(web)
+    num_threads = 1024
+    starting_counter = 0
 
-seen_domains = blinky.get_seen_domains(web)
-num_threads = 2048
-starting_counter = 0
-
-if starting_node == seeds[0]:
-    counter = starting_counter
-    for i in range(num_threads):
-        if i < len(seeds):
-            if seeds[i] == starting_node:
+    if starting_node == seeds[0]:
+        counter = starting_counter
+        for i in range(num_threads):
+            if i < len(seeds):
+                if seeds[i] == starting_node:
+                    continue
+            counter += 1
+            if i < len(seeds):
+                seed = seeds[i]
+            elif len(seen_domains) > 0:
+                seed = random.choice(seen_domains)
+            else:
+                print("No more seeds available. Exiting...")
+                break
+            try:
+                subprocess.Popen(f"python main.py {seed} {counter}", shell=True)
+            except Exception as e:
+                print(f"Error starting subprocess for {seed} {counter}: {e}")
                 continue
-        counter += 1
-        if i < len(seeds):
-            seed = seeds[i]
-        elif len(seen_domains) > 0:
-            seed = random.choice(seen_domains)
-        else:
-            print("No more seeds available. Exiting...")
-            break
-        try:
-            subprocess.Popen(f"python main.py {seed} {counter}", shell=True)
-        except Exception as e:
-            print(f"Error starting subprocess for {seed} {counter}: {e}")
-            continue
-    counter = starting_counter
+        counter = starting_counter
 
-print(f"Starting crawler on {starting_node} (Thread {counter})")
+    starting_node = h + starting_node
+    print(f"Starting crawler on {starting_node} (Thread {counter})")
+    return counter, seen_domains, web, starting_node
 
 class CrawlerState:
     def __init__(self):
@@ -74,6 +78,7 @@ def save(state):
     sys.exit(0)
 
 def crawl_node(node, depth=0):
+    """Recursively crawl the web starting from the given node"""
     if depth > 15:
         return
     if Path("stop").exists():
@@ -100,10 +105,8 @@ def crawl_node(node, depth=0):
 if __name__ == "__main__":
     # blinky.clean_data()
     try:
-        while True:
-            if seen_domains != []:
-                crawl_node(random.choice(seen_domains))
-            crawl_node(starting_node)
+        counter, seen_domains, web, starting_node = start()
+        crawl_node(starting_node)
     except KeyboardInterrupt:
         print("Keyboard interrupt detected. Saving state...")
         save(state)
