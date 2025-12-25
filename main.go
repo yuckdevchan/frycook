@@ -4,9 +4,9 @@ import (
 	"io"
 	"os"
 	"fmt"
-	"sync"
-	"sync/atomic"
+	"time"
 	"regexp"
+	"sync"
 	"net/http"
 	"encoding/json"
 )
@@ -27,7 +27,10 @@ func getSeeds() []string {
 }
 
 func fetchPage(url string) string {
-	resp, err := http.Get(url)
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+	resp, err := client.Get(url)
 	if err != nil {
 		fmt.Println("Error fetching page:", err)
 		return ""
@@ -48,33 +51,30 @@ func findHyperlinks(page string) []string {
 	return links
 }
 
-func crawl(url string, wg *sync.WaitGroup, openThreads *int32, maxThreads int32) {
+func crawl(url string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	wg.Add(1)
-	atomic.AddInt32(openThreads, 1)
 	fmt.Println("Crawling:", url)
 	page := fetchPage(url)
 	links := findHyperlinks(page)
 	for _, link := range links {
-		if openThreads != &maxThreads {
-			go crawl(link, wg, openThreads, maxThreads)
-		}
+		wg.Add(1)
+		go crawl(link, wg)
 	}
 }
 
-func startCrawler(maxThreads int32) {
-	var openThreads int32 = 0
+func startCrawler() {
 	seeds := getSeeds()
 
 	var wg sync.WaitGroup
 
 	for _, domain := range seeds {
-		go crawl("https://" + domain, &wg, &openThreads, maxThreads)
+		wg.Add(1)
+		go crawl("https://" + domain, &wg)
 	}
 
 	wg.Wait()
 }
 
 func main() {
-	startCrawler(1000)
+	startCrawler()
 }
