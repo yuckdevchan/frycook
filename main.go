@@ -5,6 +5,7 @@ import (
 	"os"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"regexp"
 	"net/http"
 	"encoding/json"
@@ -47,30 +48,33 @@ func findHyperlinks(page string) []string {
 	return links
 }
 
-func crawl(url string, wg *sync.WaitGroup) {
+func crawl(url string, wg *sync.WaitGroup, openThreads *int32, maxThreads int32) {
 	defer wg.Done()
+	wg.Add(1)
+	atomic.AddInt32(openThreads, 1)
 	fmt.Println("Crawling:", url)
 	page := fetchPage(url)
 	links := findHyperlinks(page)
 	for _, link := range links {
-		wg.Add(1)
-		go crawl(link, wg)
+		if openThreads != &maxThreads {
+			go crawl(link, wg, openThreads, maxThreads)
+		}
 	}
 }
 
-func startCrawler() {
+func startCrawler(maxThreads int32) {
+	var openThreads int32 = 0
 	seeds := getSeeds()
 
 	var wg sync.WaitGroup
 
 	for _, domain := range seeds {
-		wg.Add(1)
-		go crawl("https://" + domain, &wg)
+		go crawl("https://" + domain, &wg, &openThreads, maxThreads)
 	}
 
 	wg.Wait()
 }
 
 func main() {
-	startCrawler()
+	startCrawler(1000)
 }
