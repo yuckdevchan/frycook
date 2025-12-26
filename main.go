@@ -4,7 +4,10 @@ import (
 	"io"
 	"os"
 	"fmt"
+	"math"
 	"time"
+	"strconv"
+	"strings"
 	"regexp"
 	"sync"
 	"net/http"
@@ -51,14 +54,15 @@ func findHyperlinks(page string) []string {
 	return links
 }
 
-func crawl(url string, wg *sync.WaitGroup) {
+func crawl(url string, wg *sync.WaitGroup, depth int) {
 	defer wg.Done()
-	fmt.Println("Crawling:", url)
+	dashCount := int(math.Min(float64(depth), 10))
+	fmt.Println("└" + strings.Repeat("─", dashCount), strconv.Itoa(depth), "Crawling:", url)
 	page := fetchPage(url)
 	links := findHyperlinks(page)
 	for _, link := range links {
 		wg.Add(1)
-		go crawl(link, wg)
+		go crawl(link, wg, depth + 1)
 	}
 }
 
@@ -69,7 +73,7 @@ func startCrawler() {
 
 	for _, domain := range seeds {
 		wg.Add(1)
-		go crawl("https://" + domain, &wg)
+		go crawl("https://" + domain, &wg, 0)
 	}
 
 	wg.Wait()
